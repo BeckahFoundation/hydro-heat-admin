@@ -5,8 +5,8 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Hydro Heat — Admin',
-  description: 'Sauna Components Catalog Admin',
+  title: 'Hydro Heat — Sauna & Heat-Therapy Components',
+  description: 'Premium sauna and heat-therapy components for wellness centers, contractors, and commercial installers.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
