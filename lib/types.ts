@@ -68,3 +68,27 @@ export interface Inquiry {
 }
 
 export type InquiryStatus = Inquiry['status']
+
+export interface Contact {
+  id: string
+  name: string | null
+  company: string | null
+  email: string
+  phone: string | null
+  type: 'prospect' | 'customer' | 'partner'
+  status: 'new' | 'contacted' | 'active' | 'unsubscribed' | 'bounced'
+  segment: 'builder' | 'distributor' | 'studio' | 'spa' | 'other' | null
+  tags: string[]
+  source: string | null
+  opted_in: boolean
+  unsubscribe_token: string
+  notes: string | null
+  last_contacted_at: string | null
+  synced_to_zoho: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type ContactType = Contact['type']
+export type ContactStatus = Contact['status']
+export type ContactSegment = NonNullable<Contact['segment']>

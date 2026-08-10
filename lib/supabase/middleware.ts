@@ -28,6 +28,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/products') ||
     request.nextUrl.pathname.startsWith('/orders') ||
     request.nextUrl.pathname.startsWith('/inquiries') ||
+    request.nextUrl.pathname.startsWith('/contacts') ||
     request.nextUrl.pathname.startsWith('/inventory') ||
     request.nextUrl.pathname.startsWith('/reports') ||
     request.nextUrl.pathname.startsWith('/settings')
