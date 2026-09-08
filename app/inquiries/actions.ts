@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { InquiryStatus } from '@/lib/types'
+import { notifyNewInquiry } from '@/lib/notify'
 
 export async function submitInquiry(formData: FormData) {
   const supabase = await createClient()
@@ -26,6 +27,10 @@ export async function submitInquiry(formData: FormData) {
 
   const { error } = await supabase.from('inquiries').insert(payload)
   if (error) return { ok: false, error: 'Could not submit inquiry. Please try again.' }
+
+  // Fire the team alert. notifyNewInquiry never throws, so a mail hiccup
+  // can't fail the customer's submission.
+  await notifyNewInquiry(payload)
 
   revalidatePath('/inquiries')
   return { ok: true }
