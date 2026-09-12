@@ -1,6 +1,13 @@
 // Transactional alert to the Hydro Heat team when a customer submits a pricing request.
-// Uses Resend's REST API (no SDK dependency). Fails SAFE: any misconfiguration or
-// network error is swallowed and logged so it can NEVER break a customer's submission.
+// Uses Zoho ZeptoMail's REST API (no SDK dependency). Fails SAFE: any misconfiguration
+// or network error is swallowed and logged so it can NEVER break a customer's submission.
+//
+// Env:
+//   ZEPTOMAIL_TOKEN     — ZeptoMail "Send Mail" token (with or without the
+//                         "Zoho-enczapikey " prefix)
+//   INQUIRY_ALERT_TO    — recipient (default sales@hydroheatco.com)
+//   INQUIRY_ALERT_FROM  — sender address on the verified domain (default
+//                         alerts@hydroheatco.com)
 
 type InquiryAlert = {
   name: string
@@ -16,14 +23,17 @@ const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 export async function notifyNewInquiry(inq: InquiryAlert): Promise<void> {
-  const key = process.env.RESEND_API_KEY
+  const rawToken = process.env.ZEPTOMAIL_TOKEN
   const to = process.env.INQUIRY_ALERT_TO || 'sales@hydroheatco.com'
-  const from = process.env.INQUIRY_ALERT_FROM || 'Hydro Heat Alerts <alerts@send.hydroheatco.com>'
+  const fromAddress = process.env.INQUIRY_ALERT_FROM || 'alerts@hydroheatco.com'
 
-  if (!key) {
-    console.warn('[notify] RESEND_API_KEY not set — skipping inquiry alert email.')
+  if (!rawToken) {
+    console.warn('[notify] ZEPTOMAIL_TOKEN not set — skipping inquiry alert email.')
     return
   }
+  const authHeader = rawToken.startsWith('Zoho-enczapikey')
+    ? rawToken
+    : `Zoho-enczapikey ${rawToken}`
 
   const rows: [string, string | null | undefined][] = [
     ['Product', inq.product_name],
@@ -34,7 +44,7 @@ export async function notifyNewInquiry(inq: InquiryAlert): Promise<void> {
     ['Quantity / use case', inq.quantity],
     ['Message', inq.message],
   ]
-  const html = `
+  const htmlbody = `
     <div style="font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f2937">
       <h2 style="margin:0 0 12px">New pricing request</h2>
       <table style="border-collapse:collapse;font-size:14px">
@@ -53,19 +63,23 @@ export async function notifyNewInquiry(inq: InquiryAlert): Promise<void> {
     </div>`
 
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch('https://api.zeptomail.com/v1.1/email', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: authHeader,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
       body: JSON.stringify({
-        from,
-        to: [to],
-        reply_to: inq.email,
+        from: { address: fromAddress, name: 'Hydro Heat Alerts' },
+        to: [{ email_address: { address: to, name: 'Hydro Heat' } }],
+        reply_to: [{ address: inq.email, name: inq.name }],
         subject: `New pricing request${inq.product_name ? ` — ${inq.product_name}` : ''}`,
-        html,
+        htmlbody,
       }),
     })
     if (!res.ok) {
-      console.error('[notify] Resend responded', res.status, await res.text().catch(() => ''))
+      console.error('[notify] ZeptoMail responded', res.status, await res.text().catch(() => ''))
     }
   } catch (e) {
     console.error('[notify] failed to send inquiry alert:', e)
