@@ -23,7 +23,7 @@ const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 export async function notifyNewInquiry(inq: InquiryAlert): Promise<void> {
-  const rawToken = process.env.ZEPTOMAIL_TOKEN
+  const rawToken = process.env.ZEPTOMAIL_TOKEN?.trim()
   const to = process.env.INQUIRY_ALERT_TO || 'sales@hydroheatco.com'
   const fromAddress = process.env.INQUIRY_ALERT_FROM || 'alerts@hydroheatco.com'
 
