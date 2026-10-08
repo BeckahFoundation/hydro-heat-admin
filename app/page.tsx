@@ -3,8 +3,15 @@ import Link from 'next/link'
 import Image from 'next/image'
 import type { Product, Category } from '@/lib/types'
 import { Flame, Mail, Phone, ChevronRight } from 'lucide-react'
+import type { Metadata } from 'next'
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, jsonLd } from '@/lib/site'
 
 export const revalidate = 60
+
+// Category filters (?category=) are views of the same catalog — one canonical URL.
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+}
 
 export default async function CatalogPage({
   searchParams,
@@ -33,8 +40,40 @@ export default async function CatalogPage({
       )
     : (products ?? [])
 
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      url: SITE_URL,
+      email,
+      ...(phone ? { telephone: phone } : {}),
+      description: SITE_DESCRIPTION,
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: SITE_NAME,
+      url: SITE_URL,
+      publisher: { '@id': `${SITE_URL}/#organization` },
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      name: 'Hydro Heat sauna components catalog',
+      itemListElement: (products ?? []).map((p: Product, i: number) => ({
+        '@type': 'ListItem',
+        position: i + 1,
+        url: `${SITE_URL}/catalog/${p.id}`,
+        name: p.name,
+      })),
+    },
+  ]
+
   return (
     <div className="min-h-screen bg-stone-50">
+      <script type="application/ld+json" dangerouslySetInnerHTML={jsonLd(structuredData)} />
       {/* Nav */}
       <header className="bg-gray-900 text-white sticky top-0 z-50 shadow-lg">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
