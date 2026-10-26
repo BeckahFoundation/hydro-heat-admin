@@ -157,7 +157,9 @@ def cmd_plan(n_new):
     today = date.today()
     room = DAILY_CAP - sent_today(leads, today)
     followups, fresh = [], []
-    for l in sorted(leads.values(), key=lambda x: (x.get('source', ''), x['email'])):
+    # Best-fit buyers first: builders/installers, then resellers, then studios/operators.
+    order = {'builders': 0, 'resellers': 1, 'operators': 2}
+    for l in sorted(leads.values(), key=lambda x: (order[T.group_for(x.get('segment'))], x.get('state', ''), x['email'])):
         s = due_step(l, today)
         if s and s > 1:
             followups.append((l, s))
@@ -223,7 +225,14 @@ def cmd_send(batch_path, approved):
         sys.exit('Missing postal address in data/config.json')
     with open(batch_path) as f:
         batch = json.load(f)
-    cmd_replies(quiet=True)  # never follow up someone who just replied
+    try:
+        cmd_replies(quiet=True)  # never follow up someone who just replied
+    except imaplib.IMAP4.error as e:
+        # First-touch emails can't be "replied to" yet, so they may go without the inbox
+        # check. Follow-ups never send blind.
+        if any(i['step'] > 1 for i in batch['items']):
+            sys.exit(f'Cannot read inbox ({e}); refusing to send follow-ups blind. Enable IMAP first.')
+        print('note: inbox check unavailable (IMAP off) — sending first-touch emails only')
     leads = load_leads()
     today = date.today()
     pw = password()
