@@ -6,6 +6,8 @@
   python3 outreach.py send <batch.json> --approved         send exactly that batch (spaced out)
   python3 outreach.py replies                              check inbox: replies + bounces stop the sequence
   python3 outreach.py status                               pipeline counts
+  python3 outreach.py mark <email> replied|bounced|unsubscribed   record a reply seen in the inbox
+  python3 outreach.py checked                              stamp a manual inbox review (no-IMAP mode)
   python3 outreach.py test                                 send step-1 sample to sales@ itself
 
 Rules baked in: never more than DAILY_CAP sends/day; replies/bounces/"no" stop a
@@ -246,8 +248,16 @@ def cmd_send(batch_path, approved):
         # First-touch emails can't be "replied to" yet, so they may go without the inbox
         # check. Follow-ups never send blind.
         if any(i['step'] > 1 for i in batch['items']):
-            sys.exit(f'Cannot read inbox ({e}); refusing to send follow-ups blind. Enable IMAP first.')
-        print('note: inbox check unavailable (IMAP off) — sending first-touch emails only')
+            # Free Zoho plan has no IMAP: the inbox is reviewed by hand in the browser,
+            # replies/bounces recorded with `mark`, then `checked` stamps the review.
+            stamp = cfg.get('manual_inbox_check')
+            fresh = stamp and datetime.now() - datetime.fromisoformat(stamp) < timedelta(hours=3)
+            if not fresh:
+                sys.exit(f'Cannot read inbox ({e}). Review sales@ in the browser, `mark` any '
+                         'replies/bounces, run `checked`, then send again (valid 3 hours).')
+            print(f'note: IMAP off — relying on manual inbox check at {stamp}')
+        else:
+            print('note: inbox check unavailable (IMAP off) — sending first-touch emails only')
     leads = load_leads()
     today = date.today()
     pw = password()
@@ -331,6 +341,27 @@ def cmd_replies(quiet=False):
             print('No new replies or bounces.')
 
 
+# ---------- manual inbox review (free plan, no IMAP) ----------
+def cmd_mark(addr, status):
+    if status not in STOP_STATUSES:
+        sys.exit(f'status must be one of {sorted(STOP_STATUSES)}')
+    leads = load_leads()
+    l = leads.get(addr.strip().lower())
+    if not l:
+        sys.exit(f'no lead {addr}')
+    l['status'] = status
+    save_leads(leads)
+    print(f'{addr}: {status}')
+
+
+def cmd_checked():
+    cfg = load_config()
+    cfg['manual_inbox_check'] = datetime.now().isoformat(timespec='seconds')
+    with open(CONFIG, 'w') as f:
+        json.dump(cfg, f, indent=1)
+    print('manual inbox check recorded', cfg['manual_inbox_check'])
+
+
 # ---------- status / test ----------
 def cmd_status():
     leads = load_leads()
@@ -370,6 +401,10 @@ if __name__ == '__main__':
         cmd_send(a[1], '--approved' in a)
     elif c == 'replies':
         cmd_replies()
+    elif c == 'mark':
+        cmd_mark(a[1], a[2])
+    elif c == 'checked':
+        cmd_checked()
     elif c == 'status':
         cmd_status()
     elif c == 'test':
