@@ -6,7 +6,7 @@ import ProductGallery from '@/components/ProductGallery'
 import InquiryForm from '@/components/InquiryForm'
 import { cache } from 'react'
 import type { Metadata } from 'next'
-import { SITE_URL, SITE_NAME, jsonLd } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_ADDRESS_LINE, jsonLd } from '@/lib/site'
 
 export const revalidate = 60
 
@@ -173,7 +173,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <footer className="bg-gray-950 text-gray-500 text-center text-sm py-6 mt-12">
-        © {new Date().getFullYear()} {companyName}. All rights reserved.
+        <p>{SITE_ADDRESS_LINE}</p>
+        <p className="mt-1">© {new Date().getFullYear()} {companyName}. All rights reserved.</p>
       </footer>
     </div>
   )

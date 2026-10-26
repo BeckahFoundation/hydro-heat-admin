@@ -4,7 +4,7 @@ import Image from 'next/image'
 import type { Product, Category } from '@/lib/types'
 import { Flame, Mail, Phone, ChevronRight } from 'lucide-react'
 import type { Metadata } from 'next'
-import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, jsonLd } from '@/lib/site'
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION, SITE_ADDRESS, SITE_ADDRESS_LINE, jsonLd } from '@/lib/site'
 
 export const revalidate = 60
 
@@ -49,6 +49,14 @@ export default async function CatalogPage({
       url: SITE_URL,
       email,
       ...(phone ? { telephone: phone } : {}),
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: SITE_ADDRESS.street,
+        addressLocality: SITE_ADDRESS.city,
+        addressRegion: SITE_ADDRESS.region,
+        postalCode: SITE_ADDRESS.postalCode,
+        addressCountry: SITE_ADDRESS.country,
+      },
       description: SITE_DESCRIPTION,
     },
     {
@@ -165,7 +173,8 @@ export default async function CatalogPage({
       </section>
 
       <footer className="bg-gray-950 text-gray-500 text-center text-sm py-6">
-        © {new Date().getFullYear()} {companyName}. All rights reserved.
+        <p>{SITE_ADDRESS_LINE}</p>
+        <p className="mt-1">© {new Date().getFullYear()} {companyName}. All rights reserved.</p>
       </footer>
     </div>
   )

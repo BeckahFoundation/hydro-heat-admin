@@ -2,6 +2,14 @@
 // The apex domain 308-redirects to www, so www is the canonical host.
 export const SITE_URL = 'https://www.hydroheatco.com'
 export const SITE_NAME = 'Hydro Heat'
+export const SITE_ADDRESS = {
+  street: '1619 1/2 Castle Hayne Rd',
+  city: 'Wilmington',
+  region: 'NC',
+  postalCode: '28401',
+  country: 'US',
+}
+export const SITE_ADDRESS_LINE = `${SITE_ADDRESS.street}, ${SITE_ADDRESS.city}, ${SITE_ADDRESS.region} ${SITE_ADDRESS.postalCode}`
 export const SITE_DESCRIPTION =
   'Hydro Heat supplies sauna heaters, sauna doors, benches, controls, lighting, ventilation and accessories to sauna builders, distributors, spas and wellness studios. Request trade pricing.'
 
