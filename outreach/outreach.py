@@ -33,8 +33,12 @@ SENDER = 'sales@hydroheatco.com'
 SENDER_NAME = 'Hydro Heat'
 SMTP_HOST, SMTP_PORT = 'smtp.zoho.com', 465
 IMAP_HOST = 'imap.zoho.com'
-DAILY_CAP = 30
-GAP_SECONDS = (60, 150)  # random pause between sends
+DAILY_CAP = 30  # hard ceiling; the warm-up cap below is usually lower
+GAP_SECONDS = (180, 420)  # random pause between sends
+
+# Zoho flags a new mailbox that jumps to many new recipients (550 5.4.6 'Unusual sending
+# activity', seen 2026-10-26 after 10 sends). Ramp by weeks since the first outreach send.
+WARMUP = [(7, 8), (14, 12), (21, 18)]  # (days since first send, cap); then DAILY_CAP
 
 STOP_STATUSES = {'replied', 'bounced', 'unsubscribed', 'excluded'}
 
@@ -144,6 +148,17 @@ def due_step(lead, today):
     return nxt if today >= last + timedelta(days=T.FOLLOWUP_DAYS[nxt]) else None
 
 
+def daily_cap(leads, today):
+    dates = [h['date'][:10] for l in leads.values() for h in l['history']]
+    if not dates:
+        return WARMUP[0][1]
+    age = (today - date.fromisoformat(min(dates))).days
+    for days, cap in WARMUP:
+        if age < days:
+            return cap
+    return DAILY_CAP
+
+
 def sent_today(leads, today):
     return sum(1 for l in leads.values() for h in l['history'] if h['date'][:10] == today.isoformat())
 
@@ -155,7 +170,7 @@ def cmd_plan(n_new):
         sys.exit('Set the business postal address first (CAN-SPAM): data/config.json {"address": "..."}')
     leads = load_leads()
     today = date.today()
-    room = DAILY_CAP - sent_today(leads, today)
+    room = daily_cap(leads, today) - sent_today(leads, today)
     followups, fresh = [], []
     # Best-fit buyers first: builders/installers, then resellers, then studios/operators.
     order = {'builders': 0, 'resellers': 1, 'operators': 2}
@@ -244,7 +259,7 @@ def cmd_send(batch_path, approved):
         if due_step(l, today) != item['step']:
             print(f'skip {l["email"]}: no longer due (status {l["status"]}, step {l["step"]})')
             continue
-        if sent_today(leads, today) >= DAILY_CAP:
+        if sent_today(leads, today) >= daily_cap(leads, today):
             print('daily cap reached — stopping')
             break
         subject, body = render(l, item['step'], address)
@@ -255,6 +270,8 @@ def cmd_send(batch_path, approved):
                 s.send_message(msg)
         except Exception as e:  # stop the whole run on any SMTP problem
             print(f'SMTP error on {l["email"]}: {e} — stopping')
+            if '5.4.6' in str(e):
+                print('Zoho rate-limit: do not retry today. Next batch tomorrow at the warm-up cap.')
             break
         l['history'].append({'step': item['step'], 'date': datetime.now().isoformat(timespec='seconds'),
                              'subject': subject, 'message_id': mid})
@@ -324,7 +341,7 @@ def cmd_status():
     print(f'{len(leads)} leads')
     for k in sorted(by):
         print(f'  {k:22} {by[k]}')
-    print(f'sent today: {sent_today(leads, date.today())}/{DAILY_CAP}')
+    print(f'sent today: {sent_today(leads, date.today())}/{daily_cap(leads, date.today())} (warm-up cap)')
 
 
 def cmd_test():
