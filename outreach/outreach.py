@@ -36,11 +36,13 @@ SENDER_NAME = 'Hydro Heat'
 SMTP_HOST, SMTP_PORT = 'smtp.zoho.com', 465
 IMAP_HOST = 'imap.zoho.com'
 DAILY_CAP = 30  # hard ceiling; the warm-up cap below is usually lower
-GAP_SECONDS = (180, 420)  # random pause between sends
+GAP_SECONDS = (600, 1200)  # random pause between sends
 
 # Zoho flags a new mailbox that jumps to many new recipients (550 5.4.6 'Unusual sending
 # activity', seen 2026-10-26 after 10 sends). Ramp by weeks since the first outreach send.
-WARMUP = [(7, 8), (14, 12), (21, 18)]  # (days since first send, cap); then DAILY_CAP
+# 2026-10-30: blocked again (5.4.6 + UnblockMe) on Zoho FREE; founder chose slow-and-free:
+# 4/day until a dedicated outreach domain exists.
+WARMUP = [(36500, 4)]  # (days since first send, cap); then DAILY_CAP
 
 STOP_STATUSES = {'replied', 'bounced', 'unsubscribed', 'excluded'}
 
