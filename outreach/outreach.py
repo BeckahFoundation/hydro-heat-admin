@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """Hydro Heat cold outreach — small, personal, approval-gated.
 
+SUPERSEDED: the admin app now runs this pipeline (Admin → Outreach, see SETUP.md §4) with
+prospect discovery, model-written drafts, an approval outbox and reply tracking. This script
+is kept for the local lead files in ./data and as a fallback sender.
+
   python3 outreach.py import <file.csv> [--source NAME]   merge leads (dedupe by email)
   python3 outreach.py plan [--new 20]                      build today's batch + preview for approval
   python3 outreach.py send <batch.json> --approved         send exactly that batch (spaced out)

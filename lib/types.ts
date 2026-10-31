@@ -92,3 +92,123 @@ export interface Contact {
 export type ContactType = Contact['type']
 export type ContactStatus = Contact['status']
 export type ContactSegment = NonNullable<Contact['segment']>
+
+// ---------- outreach ----------
+export interface ProspectSignal {
+  key: string
+  label: string
+  evidence: string
+}
+
+export type ProspectStatus =
+  | 'found' | 'qualified' | 'no_email' | 'skipped' | 'contacted' | 'replied'
+  | 'interested' | 'objection' | 'not_now' | 'unsubscribed' | 'bounced' | 'customer'
+
+export interface Prospect {
+  id: string
+  company: string
+  website: string | null
+  domain: string | null
+  email: string | null
+  phone: string | null
+  contact_name: string | null
+  city: string | null
+  state: string | null
+  country: string
+  source: string
+  external_id: string | null
+  segment: ContactSegment | null
+  status: ProspectStatus
+  step: number
+  signals: ProspectSignal[]
+  site_summary: string | null
+  scanned_at: string | null
+  last_sent_at: string | null
+  next_due_at: string | null
+  thread_subject: string | null
+  notes: string | null
+  contact_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export type MessageStatus = 'draft' | 'approved' | 'rejected' | 'sent' | 'failed' | 'received'
+export type ReplyClassification = 'interested' | 'objection' | 'not_now' | 'unsubscribe' | 'bounce' | 'auto_reply' | 'other'
+
+export interface OutreachMessage {
+  id: string
+  prospect_id: string
+  direction: 'out' | 'in'
+  kind: 'step' | 'reply'
+  step: number | null
+  subject: string
+  body: string
+  status: MessageStatus
+  message_id: string | null
+  in_reply_to: string | null
+  references_header: string | null
+  classification: ReplyClassification | null
+  from_email: string | null
+  model: string | null
+  error: string | null
+  scheduled_for: string | null
+  sent_at: string | null
+  received_at: string | null
+  created_at: string
+  updated_at: string
+  prospects?: Prospect
+}
+
+export interface OutreachRunStep {
+  name: string
+  ok: boolean
+  summary: string
+  error?: string
+  ms: number
+}
+
+export interface OutreachRun {
+  id: string
+  trigger: string
+  started_at: string
+  finished_at: string | null
+  ok: boolean | null
+  steps: OutreachRunStep[]
+  error: string | null
+}
+
+export interface OutreachSettings {
+  id: number
+  enabled: boolean
+  sender_name: string
+  sender_email: string
+  postal_address: string | null
+  catalog_url: string
+  you_sell: string
+  ideal_customer: string
+  verified_facts: string
+  timezone: string
+  quiet_start: number
+  quiet_end: number
+  send_weekends: boolean
+  warmup: [number, number][]
+  max_daily_cap: number
+  send_gap_minutes: number
+  send_max_per_run: number
+  followup_days: number[]
+  max_steps: number
+  auto_approve_followups: boolean
+  require_inbox_check_for_followups: boolean
+  inbox_check_valid_hours: number
+  last_inbox_check_at: string | null
+  scout_enabled: boolean
+  scout_areas: string[]
+  scout_name_regex: string
+  scout_cursor: number
+  scan_max_per_run: number
+  write_max_per_run: number
+  max_pending_drafts: number
+  paused_until: string | null
+  pause_reason: string | null
+  updated_at: string
+}
