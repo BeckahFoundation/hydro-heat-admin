@@ -2,7 +2,7 @@
 """Hydro Heat cold outreach — small, personal, approval-gated.
 
   python3 outreach.py import <file.csv> [--source NAME]   merge leads (dedupe by email)
-  python3 outreach.py plan [--new 20]                      build today's batch + preview for approval
+  python3 outreach.py plan [--new 20] [--new-only]         build today's batch (--new-only: skip follow-ups)
   python3 outreach.py send <batch.json> --approved         send exactly that batch (spaced out)
   python3 outreach.py replies                              check inbox: replies + bounces stop the sequence
   python3 outreach.py status                               pipeline counts
@@ -167,7 +167,7 @@ def sent_today(leads, today):
     return sum(1 for l in leads.values() for h in l['history'] if h['date'][:10] == today.isoformat())
 
 
-def cmd_plan(n_new):
+def cmd_plan(n_new, new_only=False):
     cfg = load_config()
     address = cfg.get('address')
     if not address:
@@ -181,7 +181,8 @@ def cmd_plan(n_new):
     for l in sorted(leads.values(), key=lambda x: (order[T.group_for(x.get('segment'))], x.get('state', ''), x['email'])):
         s = due_step(l, today)
         if s and s > 1:
-            followups.append((l, s))
+            if not new_only:  # follow-ups need a fresh inbox review
+                followups.append((l, s))
         elif s == 1:
             fresh.append((l, 1))
     # Spread new sends across companies/domains: max 1 per domain per batch.
@@ -398,7 +399,7 @@ if __name__ == '__main__':
         src = a[a.index('--source') + 1] if '--source' in a else os.path.basename(a[1])
         cmd_import(a[1], src)
     elif c == 'plan':
-        cmd_plan(int(a[a.index('--new') + 1]) if '--new' in a else 20)
+        cmd_plan(int(a[a.index('--new') + 1]) if '--new' in a else 20, '--new-only' in a)
     elif c == 'send':
         cmd_send(a[1], '--approved' in a)
     elif c == 'replies':
